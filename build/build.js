@@ -6,7 +6,6 @@ process.env.NODE_ENV = 'production'
 
 const ora = require('ora')
 const rm = require('rimraf')
-const path = require('path')
 const chalk = require('chalk')
 const webpack = require('webpack')
 
@@ -16,12 +15,7 @@ const webpackConfig = require('./webpack.prod.conf')
 const spinner = ora('building for production...')
 spinner.start()
 
-const {
-  build: {
-    assetsRoot,
-    assetsSubDirectory,
-  },
-} = config
+const { build: { assetsRoot } } = config
 
 const runWebpackBuild = () => {
   webpack(webpackConfig, (err, stats) => {
@@ -36,7 +30,7 @@ const runWebpackBuild = () => {
       modules: false,
       children: false,
       chunks: false,
-      chunkModules: false
+      chunkModules: false,
     })
 
     process.stdout.write(`${statsOutput}\n\n`)
@@ -54,7 +48,7 @@ const runWebpackBuild = () => {
   })
 }
 
-rm(path.join(assetsRoot, assetsSubDirectory), (err) => {
+rm(assetsRoot, (err) => {
   if (err) {
     throw err
   }

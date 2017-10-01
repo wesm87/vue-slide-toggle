@@ -12,7 +12,7 @@ const sourcePath = resolve('src')
 
 module.exports = {
   entry: {
-    app: './src/SlideToggle.vue',
+    main: './src/SlideToggle.vue',
   },
   output: {
     path: build.assetsRoot,

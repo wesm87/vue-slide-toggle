@@ -9,6 +9,7 @@
 <script>
 export default {
   name: 'vue-slide-toggle',
+
   props: {
     /**
      * When `active` becomes true, the content slides down; when it becomes
@@ -20,75 +21,106 @@ export default {
     },
 
     /**
-     * The duration of the slide transition. Must either be a number or a valid
-     * duration string (e.g. '500ms').
+     * The duration of the slide transition. Must be a number, a numeric string,
+     * or a valid duration (e.g. '500ms', '1s'). Numbers and numeric strings
+     * will be converted to 'ms' values (e.g. 750 -> '750ms').
      */
     duration: {
       type: [Number, String],
       default: 500,
     },
   },
+
   data () {
     return {
+      // TODO: Make sure this works if `active` is `true` on initial render
       maxHeight: 0,
       isAbsolute: false,
     }
   },
+
   mounted () {
     this.checkIfAbsolutelyPositioned()
   },
+
   updated () {
     this.checkIfAbsolutelyPositioned()
   },
+
   computed: {
+    durationNormalized () {
+      if (typeof this.duration === 'string') {
+        return this.duration
+      }
+
+      return `${this.duration}ms`
+    },
+
     containerClassMap () {
       return {
         'vue-slide-toggle': true,
         'vue-slide-toggle--active': this.active,
-        'vue-slide-toggle--absolute': this.isAbsolute,
       }
     },
+
     contentClassMap () {
       return {
         'vue-slide-toggle__content': true,
       }
     },
+
     containerStyleMap () {
       if (this.isAbsolute) {
-        return {}
+        return {
+          overflow: 'hidden',
+        }
       }
 
-      const hasMaxHeight = this.maxHeight !== 'none'
-      const maxHeight = hasMaxHeight ? `${this.maxHeight}px` : 'none'
+      const maxHeight = `${this.maxHeight}px`
 
       return {
+        overflow: 'hidden',
         'max-height': maxHeight,
-        'transition-duration': `${this.duration}ms`,
+        'transition-property': 'max-height',
+        'transition-duration': this.durationNormalized,
       }
     },
+
     contentStyleMap () {
       if (!this.isAbsolute) {
-        return {}
+        return null
       }
 
       const yPosition = this.active ? '0' : '-100%'
-      const transform = `translateY(${yPosition})`
 
       return {
-        transform,
-        'transition-duration': `${this.duration}ms`,
+        transform: `translateY(${yPosition})`,
+        'transition-property': 'transform',
+        'transition-duration': this.durationNormalized,
       }
     },
   },
+
   methods: {
     /**
      * Checks if the container element has a position of `absolute` or `fixed`;
      * if so, the slide transition can be done using `translateY` instead of
      * `max-height`, which allows for hardware-acceleration.
      *
-     * @TODO See if we can support `position: sticky` as well.
+     * @todo See if we can support `position: sticky` as well.
+     * @todo Maybe make this a prop instead? The end result differs slightly
+     *       between the two implementations - with `max-height` the content
+     *       stays in place while the visible area slides down, whereas with
+     *       `translateY` the content itself is what slides down. Not a major
+     *       issue but something to consider, it might be unexpected behavior
+     *       in certain edge cases.
      */
     checkIfAbsolutelyPositioned () {
+      // Bail if we're not in a browser environment
+      if (typeof window === 'undefined') {
+        return false
+      }
+
       const { container } = this.$refs
 
       if (!container) {
@@ -104,16 +136,8 @@ export default {
 
       this.isAbsolute = absolutePositions.includes(style.position)
     },
-
-    /**
-     * Returns the height of the toggleable content.
-     */
-    getContentHeight () {
-      const { content } = this.$refs
-
-      return content.offsetHeight
-    },
   },
+
   watch: {
     active (newValue, oldValue) {
       // Bail if the container element has an absolute position since we can use
@@ -127,33 +151,17 @@ export default {
         return
       }
 
+      // Collapse the content if `active` is now `false`.
       if (!newValue) {
         this.maxHeight = 0
         return
       }
 
-      // Set `max-height` to `none`, wait for the DOM changes to be applied,
-      // and set the `max-height` to the actual content height.
-      this.maxHeight = 'none'
-      this.$nextTick(() => {
-        this.maxHeight = this.getContentHeight()
-      })
+      // Set `max-height` to the height of the content.
+      const { content } = this.$refs
+
+      this.maxHeight = content.offsetHeight
     },
   },
 }
 </script>
-
-<style lang="scss" scoped>
-.vue-slide-toggle {
-  overflow: hidden;
-  transition-property: max-height;
-}
-
-.vue-slide-toggle--absolute {
-  transition-property: none;
-
-  .vue-slide-toggle__content {
-    transition-property: transform;
-  }
-}
-</style>
